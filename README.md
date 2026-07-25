@@ -22,6 +22,10 @@ npm run dev
 Le projet utilise Next.js, React, TypeScript, Tailwind CSS et shadcn/ui. Il ne
 contient ni base de données, ni authentification, ni route API.
 
+Les drapeaux SVG de la catégorie Drapeaux sont fournis localement par
+`flag-icons`, sous licence MIT. L’attribution figure dans
+[THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+
 ## Tests
 
 ```bash

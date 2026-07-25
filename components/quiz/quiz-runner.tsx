@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, XCircle } from "lucide-react";
 
+import { CountryFlag } from "@/components/quiz/country-flag";
 import { QuizResult } from "@/components/quiz/quiz-result";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -241,6 +242,15 @@ function QuizSession({ category }: QuizRunnerProps) {
                 </CardHeader>
 
                 <CardContent className="space-y-3">
+                    {question.media?.type === "flag" ? (
+                        <div className="bg-muted/30 mb-6 flex justify-center rounded-lg p-4 sm:p-6">
+                            <CountryFlag
+                                countryCode={question.media.countryCode}
+                                description={question.media.description}
+                            />
+                        </div>
+                    ) : null}
+
                     {question.options.map((option) => {
                         const optionIsCorrect = option.id === question.correctOptionId;
                         const optionIsSelected = option.id === selectedOptionId;

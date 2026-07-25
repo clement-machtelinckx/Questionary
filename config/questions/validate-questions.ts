@@ -1,6 +1,7 @@
-import type { QuestionCategory } from "./types";
+import type { Question, QuestionCategory } from "./types";
 
 const VALID_IDENTIFIER_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const FLAG_COUNTRY_CODE_PATTERN = /^[a-z]{2}$/;
 
 function assertValidIdentifier(identifier: string, context: string): void {
     if (!VALID_IDENTIFIER_PATTERN.test(identifier)) {
@@ -8,6 +9,84 @@ function assertValidIdentifier(identifier: string, context: string): void {
             `Configuration invalide : l’identifiant "${identifier}" de ${context} doit utiliser uniquement des lettres ASCII minuscules, des chiffres et des tirets.`,
         );
     }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function validateQuestionMedia(
+    question: Question,
+    correctOptionLabel: string,
+    categoryTitle: string,
+): string | undefined {
+    const media: unknown = question.media;
+
+    if (media === undefined) {
+        return undefined;
+    }
+
+    if (!isRecord(media) || typeof media.type !== "string") {
+        throw new Error(
+            `Configuration invalide : le média de la question "${question.id}" de "${categoryTitle}" utilise un type inconnu.`,
+        );
+    }
+
+    if (media.type === "flag") {
+        if (
+            typeof media.countryCode !== "string" ||
+            !FLAG_COUNTRY_CODE_PATTERN.test(media.countryCode)
+        ) {
+            throw new Error(
+                `Configuration invalide : le drapeau de la question "${question.id}" doit utiliser un code pays ISO à deux lettres minuscules.`,
+            );
+        }
+
+        if (typeof media.description !== "string" || media.description.trim().length === 0) {
+            throw new Error(
+                `Configuration invalide : le drapeau de la question "${question.id}" doit avoir une description accessible.`,
+            );
+        }
+
+        const normalizedDescription = media.description.trim().toLocaleLowerCase("fr");
+        const normalizedAnswer = correctOptionLabel.trim().toLocaleLowerCase("fr");
+
+        if (normalizedDescription.includes(normalizedAnswer)) {
+            throw new Error(
+                `Configuration invalide : la description accessible de "${question.id}" révèle la bonne réponse.`,
+            );
+        }
+
+        const countryCodePattern = new RegExp(`(^|[^a-z])${media.countryCode}([^a-z]|$)`, "i");
+
+        if (countryCodePattern.test(normalizedDescription)) {
+            throw new Error(
+                `Configuration invalide : la description accessible de "${question.id}" révèle le code pays.`,
+            );
+        }
+
+        return `flag:${media.countryCode}`;
+    }
+
+    if (media.type === "image") {
+        if (typeof media.src !== "string" || media.src.trim().length === 0) {
+            throw new Error(
+                `Configuration invalide : l’image de la question "${question.id}" doit avoir une source.`,
+            );
+        }
+
+        if (typeof media.description !== "string" || media.description.trim().length === 0) {
+            throw new Error(
+                `Configuration invalide : l’image de la question "${question.id}" doit avoir une description accessible.`,
+            );
+        }
+
+        return `image:${media.src.trim()}`;
+    }
+
+    throw new Error(
+        `Configuration invalide : le média de la question "${question.id}" de "${categoryTitle}" utilise le type inconnu "${media.type}".`,
+    );
 }
 
 export function validateQuestionCategories(categories: readonly QuestionCategory[]): void {
@@ -71,12 +150,6 @@ export function validateQuestionCategories(categories: readonly QuestionCategory
                 );
             }
 
-            if (prompts.has(normalizedPrompt)) {
-                throw new Error(
-                    `Configuration invalide : énoncé dupliqué pour la question "${question.id}" de "${category.title}".`,
-                );
-            }
-
             if (question.options.length !== 4) {
                 throw new Error(
                     `Configuration invalide : la question "${question.id}" de "${category.title}" doit contenir exactement quatre réponses.`,
@@ -118,9 +191,28 @@ export function validateQuestionCategories(categories: readonly QuestionCategory
                 optionIds.add(option.id);
             }
 
-            if (!questionOptionIds.has(question.correctOptionId)) {
+            const correctOption = question.options.find(
+                (option) => option.id === question.correctOptionId,
+            );
+
+            if (!correctOption || !questionOptionIds.has(question.correctOptionId)) {
                 throw new Error(
                     `Configuration invalide : la bonne réponse "${question.correctOptionId}" est absente de la question "${question.id}" de "${category.title}".`,
+                );
+            }
+
+            const mediaIdentity = validateQuestionMedia(
+                question,
+                correctOption.label,
+                category.title,
+            );
+            const promptIdentity = mediaIdentity
+                ? `${normalizedPrompt}\u0000${mediaIdentity}`
+                : normalizedPrompt;
+
+            if (prompts.has(promptIdentity)) {
+                throw new Error(
+                    `Configuration invalide : énoncé dupliqué pour la question "${question.id}" de "${category.title}".`,
                 );
             }
 
@@ -131,8 +223,28 @@ export function validateQuestionCategories(categories: readonly QuestionCategory
             }
 
             questionIds.add(question.id);
-            prompts.add(normalizedPrompt);
+            prompts.add(promptIdentity);
         }
+    }
+}
+
+export function validateFlagQuestionCategory(category: QuestionCategory): void {
+    const countryCodes = new Set<string>();
+
+    for (const question of category.questions) {
+        if (question.media?.type !== "flag") {
+            throw new Error(
+                `Configuration invalide : la question "${question.id}" de "${category.title}" doit utiliser un drapeau.`,
+            );
+        }
+
+        if (countryCodes.has(question.media.countryCode)) {
+            throw new Error(
+                `Configuration invalide : le code pays "${question.media.countryCode}" est utilisé plusieurs fois dans "${category.title}".`,
+            );
+        }
+
+        countryCodes.add(question.media.countryCode);
     }
 }
 

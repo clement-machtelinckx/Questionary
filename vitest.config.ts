@@ -24,6 +24,7 @@ export default defineConfig({
                 "lib/high-score-storage.ts",
                 "config/questions/index.ts",
                 "config/questions/validate-questions.ts",
+                "components/quiz/country-flag.tsx",
                 "components/quiz/quiz-runner.tsx",
                 "components/quiz/quiz-result.tsx",
             ],

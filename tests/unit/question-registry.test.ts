@@ -6,6 +6,7 @@ import {
     getCategoryBySlug,
     questionCategories,
 } from "@/config/questions";
+import { drapeauxCategory } from "@/config/questions/drapeaux";
 
 describe("registre des catégories", () => {
     it("expose des slugs et identifiants de catégories uniques", () => {
@@ -21,6 +22,19 @@ describe("registre des catégories", () => {
 
         expect(getCategoryBySlug(expectedCategory.slug)).toBe(expectedCategory);
         expect(getCategoryBySlug("slug-inconnu")).toBeUndefined();
+    });
+
+    it("enregistre Drapeaux et ajoute ses questions une seule fois à all", () => {
+        expect(getCategoryBySlug("drapeaux")).toBe(drapeauxCategory);
+        expect(baseQuestionCategories).toContain(drapeauxCategory);
+
+        const allQuestionIds = allQuestionsCategory.questions.map((question) => question.id);
+
+        for (const question of drapeauxCategory.questions) {
+            expect(allQuestionIds.filter((questionId) => questionId === question.id)).toHaveLength(
+                1,
+            );
+        }
     });
 
     it("inclut la catégorie all sans l’inclure dans sa propre construction", () => {

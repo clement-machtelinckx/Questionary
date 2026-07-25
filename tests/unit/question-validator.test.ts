@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { QuestionOptions } from "@/config/questions/types";
+import type { QuestionMedia, QuestionOptions } from "@/config/questions/types";
 import {
+    validateFlagQuestionCategory,
     validateNumberedQuestionCategories,
     validateQuestionCategories,
 } from "@/config/questions/validate-questions";
@@ -163,6 +164,119 @@ describe("validateQuestionCategories", () => {
             );
         },
     );
+
+    it("accepte le même énoncé lorsque deux drapeaux sont différents", () => {
+        const category = createTestCategory(2);
+        category.questions[0].media = {
+            type: "flag",
+            countryCode: "fr",
+            description: "Trois bandes verticales bleue, blanche et rouge",
+        };
+        category.questions[1].prompt = category.questions[0].prompt;
+        category.questions[1].media = {
+            type: "flag",
+            countryCode: "jp",
+            description: "Fond blanc portant un disque rouge centré",
+        };
+
+        expect(() => validateQuestionCategories([category])).not.toThrow();
+    });
+
+    it("rejette un code pays de drapeau invalide", () => {
+        const category = createTestCategory(1);
+        category.questions[0].media = {
+            type: "flag",
+            countryCode: "FR",
+            description: "Trois bandes verticales bleue, blanche et rouge",
+        };
+
+        expect(() => validateQuestionCategories([category])).toThrow(
+            /code pays ISO à deux lettres minuscules/,
+        );
+    });
+
+    it("rejette une description de drapeau vide", () => {
+        const category = createTestCategory(1);
+        category.questions[0].media = {
+            type: "flag",
+            countryCode: "fr",
+            description: " ",
+        };
+
+        expect(() => validateQuestionCategories([category])).toThrow(
+            /doit avoir une description accessible/,
+        );
+    });
+
+    it("rejette une description qui révèle la bonne réponse", () => {
+        const category = createTestCategory(1);
+        category.questions[0].media = {
+            type: "flag",
+            countryCode: "fr",
+            description: "Le drapeau correspond à Réponse B",
+        };
+
+        expect(() => validateQuestionCategories([category])).toThrow(/révèle la bonne réponse/);
+    });
+
+    it("rejette une description qui révèle le code pays", () => {
+        const category = createTestCategory(1);
+        category.questions[0].media = {
+            type: "flag",
+            countryCode: "fr",
+            description: "Trois bandes avec le code fr visible",
+        };
+
+        expect(() => validateQuestionCategories([category])).toThrow(/révèle le code pays/);
+    });
+
+    it("rejette un type de média inconnu", () => {
+        const category = createTestCategory(1);
+        category.questions[0].media = {
+            type: "video",
+            src: "/video.mp4",
+            description: "Un média inconnu",
+        } as unknown as QuestionMedia;
+
+        expect(() => validateQuestionCategories([category])).toThrow(/type inconnu "video"/);
+    });
+
+    it("valide une image décrite et rejette une source vide", () => {
+        const category = createTestCategory(1);
+        category.questions[0].media = {
+            type: "image",
+            src: "/illustration.svg",
+            description: "Une illustration abstraite",
+        };
+
+        expect(() => validateQuestionCategories([category])).not.toThrow();
+
+        category.questions[0].media.src = " ";
+
+        expect(() => validateQuestionCategories([category])).toThrow(/doit avoir une source/);
+    });
+});
+
+describe("validateFlagQuestionCategory", () => {
+    it("rejette une question sans drapeau", () => {
+        const category = createTestCategory(1);
+
+        expect(() => validateFlagQuestionCategory(category)).toThrow(/doit utiliser un drapeau/);
+    });
+
+    it("rejette un code pays utilisé deux fois dans la même catégorie", () => {
+        const category = createTestCategory(2);
+
+        for (const question of category.questions) {
+            question.media = {
+                type: "flag",
+                countryCode: "fr",
+                description: "Trois bandes verticales bleue, blanche et rouge",
+            };
+        }
+
+        expect(() => validateFlagQuestionCategory(category)).toThrow(/est utilisé plusieurs fois/);
+    });
 });
 
 describe("validateNumberedQuestionCategories", () => {

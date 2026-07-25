@@ -1,6 +1,7 @@
 import { cinemaSeriesCategory } from "./cinema-series";
 import { cultureGeneraleCategory } from "./culture-generale";
 import { developpementWebCategory } from "./developpement-web";
+import { drapeauxCategory } from "./drapeaux";
 import { geographieCategory } from "./geographie";
 import { herculePoirotCategory } from "./hercule-poirot";
 import { histoireCategory } from "./histoire";
@@ -10,6 +11,7 @@ import { sciencesCategory } from "./sciences";
 import { sportCategory } from "./sport";
 import type { QuestionCategory } from "./types";
 import {
+    validateFlagQuestionCategory,
     validateNumberedQuestionCategories,
     validateQuestionCategories,
 } from "./validate-questions";
@@ -19,6 +21,7 @@ export const baseQuestionCategories: QuestionCategory[] = [
     sciencesCategory,
     histoireCategory,
     geographieCategory,
+    drapeauxCategory,
     natureCategory,
     developpementWebCategory,
     cinemaSeriesCategory,
@@ -29,6 +32,7 @@ export const baseQuestionCategories: QuestionCategory[] = [
 
 const fiftyQuestionCategories: QuestionCategory[] = [
     geographieCategory,
+    drapeauxCategory,
     natureCategory,
     developpementWebCategory,
     cinemaSeriesCategory,
@@ -39,6 +43,7 @@ const fiftyQuestionCategories: QuestionCategory[] = [
 
 validateQuestionCategories(baseQuestionCategories);
 validateNumberedQuestionCategories(fiftyQuestionCategories, 50);
+validateFlagQuestionCategory(drapeauxCategory);
 
 export const allQuestionsCategory: QuestionCategory = {
     id: "category-all",
@@ -57,4 +62,10 @@ export function getCategoryBySlug(slug: string): QuestionCategory | undefined {
     return questionCategories.find((category) => category.slug === slug);
 }
 
-export type { Question, QuestionCategory, QuestionOption, QuestionOptions } from "./types";
+export type {
+    Question,
+    QuestionCategory,
+    QuestionMedia,
+    QuestionOption,
+    QuestionOptions,
+} from "./types";

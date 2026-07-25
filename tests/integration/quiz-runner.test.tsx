@@ -127,6 +127,41 @@ describe("QuizRunner", () => {
         expect(screen.getAllByRole("button", { pressed: false })).toHaveLength(4);
     });
 
+    it("affiche un drapeau accessible pendant la réponse et à la question suivante", async () => {
+        const category = createTestCategory(2);
+        category.questions[0].media = {
+            type: "flag",
+            countryCode: "fr",
+            description: "Trois bandes verticales bleue, blanche et rouge",
+        };
+        category.questions[1].media = {
+            type: "flag",
+            countryCode: "jp",
+            description: "Fond blanc portant un disque rouge centré",
+        };
+        const { user } = await renderQuiz(category);
+        const firstFlag = screen.getByRole("img", {
+            name: category.questions[0].media.description,
+        });
+
+        expect(firstFlag).toHaveClass("fi-fr");
+        expect(firstFlag).not.toHaveAccessibleName(/France/i);
+        expect(screen.getAllByRole("button", { pressed: false })).toHaveLength(4);
+
+        await user.click(screen.getByRole("button", { name: "Réponse B" }));
+
+        expect(screen.getByRole("status")).toBeInTheDocument();
+        expect(firstFlag).toBeInTheDocument();
+
+        await user.click(screen.getByRole("button", { name: "Question suivante" }));
+
+        expect(
+            screen.getByRole("img", {
+                name: category.questions[1].media.description,
+            }),
+        ).toHaveClass("fi-jp");
+    });
+
     it("affiche le résultat final et sauvegarde le score une seule fois", async () => {
         const category = createTestCategory(1);
         const { user } = await renderQuiz(category);

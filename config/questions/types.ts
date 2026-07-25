@@ -5,9 +5,22 @@ export type QuestionOption = {
 
 export type QuestionOptions = [QuestionOption, QuestionOption, QuestionOption, QuestionOption];
 
+export type QuestionMedia =
+    | {
+          type: "flag";
+          countryCode: string;
+          description: string;
+      }
+    | {
+          type: "image";
+          src: string;
+          description: string;
+      };
+
 export type Question = {
     id: string;
     prompt: string;
+    media?: QuestionMedia;
     options: QuestionOptions;
     correctOptionId: string;
     explanation: string;
