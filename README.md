@@ -1,14 +1,14 @@
 # Questionary
 
-Base Next.js minimale pour la future application Questionary.
+Application de quiz fonctionnant entièrement dans le navigateur.
 
-## Stack
+## Fonctionnalités
 
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
+- deux catégories de démonstration ;
+- correction immédiate après chaque réponse ;
+- résultat final et pourcentage ;
+- meilleur score conservé localement par catégorie ;
+- consultation, suppression et rejeu des scores.
 
 ## Démarrage
 
@@ -16,3 +16,6 @@ Base Next.js minimale pour la future application Questionary.
 npm install
 npm run dev
 ```
+
+Le projet utilise Next.js, React, TypeScript, Tailwind CSS et shadcn/ui. Il ne
+contient ni base de données, ni authentification, ni route API.

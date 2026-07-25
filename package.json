@@ -1,5 +1,5 @@
 {
-    "name": "site-skeleton",
+    "name": "questionary",
     "version": "0.1.0",
     "private": true,
     "scripts": {
@@ -11,24 +11,20 @@
         "format": "prettier --write ."
     },
     "dependencies": {
-        "@hookform/resolvers": "^5.2.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "embla-carousel-react": "^8.6.0",
         "lucide-react": "^0.577.0",
         "next": "16.1.6",
-        "nodemailer": "^8.0.1",
         "radix-ui": "^1.4.3",
         "react": "19.2.3",
         "react-dom": "19.2.3",
         "react-hook-form": "^7.71.2",
-        "tailwind-merge": "^3.5.0",
-        "zod": "^4.3.6"
+        "tailwind-merge": "^3.5.0"
     },
     "devDependencies": {
         "@tailwindcss/postcss": "^4.2.1",
         "@types/node": "^22.16",
-        "@types/nodemailer": "^7.0.11",
         "@types/react": "^19.2.3",
         "@types/react-dom": "^19.2.3",
         "eslint": "^9.7.0",

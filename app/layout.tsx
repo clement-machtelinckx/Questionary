@@ -1,12 +1,16 @@
 import "./globals.css";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
+import { siteConfig } from "@/config/site";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-    title: "Questionary",
-    description: "Questionary est en cours de construction.",
+    title: {
+        default: siteConfig.name,
+        template: `%s | ${siteConfig.name}`,
+    },
+    description: siteConfig.description,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
