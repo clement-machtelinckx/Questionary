@@ -2,6 +2,7 @@ import { cinemaSeriesCategory } from "./cinema-series";
 import { cultureGeneraleCategory } from "./culture-generale";
 import { developpementWebCategory } from "./developpement-web";
 import { geographieCategory } from "./geographie";
+import { herculePoirotCategory } from "./hercule-poirot";
 import { histoireCategory } from "./histoire";
 import { jeuxVideoCategory } from "./jeux-video";
 import { sciencesCategory } from "./sciences";
@@ -19,6 +20,7 @@ export const baseQuestionCategories: QuestionCategory[] = [
     geographieCategory,
     developpementWebCategory,
     cinemaSeriesCategory,
+    herculePoirotCategory,
     jeuxVideoCategory,
     sportCategory,
 ];
@@ -27,6 +29,7 @@ const fiftyQuestionCategories: QuestionCategory[] = [
     geographieCategory,
     developpementWebCategory,
     cinemaSeriesCategory,
+    herculePoirotCategory,
     jeuxVideoCategory,
     sportCategory,
 ];
