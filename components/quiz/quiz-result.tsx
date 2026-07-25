@@ -10,6 +10,7 @@ import type { HighScoreEntry } from "@/lib/high-score-storage";
 type QuizResultProps = {
     category: QuestionCategory;
     score: number;
+    total: number;
     bestScore: HighScoreEntry | undefined;
     onRestart: () => void;
 };
@@ -30,8 +31,7 @@ function getResultMessage(percentage: number) {
     return "Continuez à vous entraîner, le prochain essai sera meilleur.";
 }
 
-export function QuizResult({ category, score, bestScore, onRestart }: QuizResultProps) {
-    const total = category.questions.length;
+export function QuizResult({ category, score, total, bestScore, onRestart }: QuizResultProps) {
     const percentage = Math.round((score / total) * 100);
 
     return (

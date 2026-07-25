@@ -7,8 +7,14 @@ import { QuizResult } from "@/components/quiz/quiz-result";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { QUESTIONS_PER_QUIZ } from "@/config/quiz";
 import type { Question, QuestionCategory, QuestionOptions } from "@/config/questions";
 import { getHighScore, saveHighScore, type HighScoreEntry } from "@/lib/high-score-storage";
+import {
+    completeActiveQuizSession,
+    getOrCreateActiveQuizSession,
+    startNextQuizSession,
+} from "@/lib/question-pool-storage";
 import { shuffleArray } from "@/lib/shuffle-array";
 import { cn } from "@/lib/utils";
 
@@ -30,11 +36,25 @@ function shuffleQuestionOptions(options: QuestionOptions): QuestionOptions {
     return [shuffledOptions[0], shuffledOptions[1], shuffledOptions[2], shuffledOptions[3]];
 }
 
-function createQuizSession(category: QuestionCategory): QuizSessionQuestion[] {
-    return shuffleArray(category.questions).map((question) => ({
-        ...question,
-        options: shuffleQuestionOptions(question.options),
-    }));
+function createQuizSession(
+    category: QuestionCategory,
+    questionIds: readonly string[],
+): QuizSessionQuestion[] {
+    const questionsById = new Map(category.questions.map((question) => [question.id, question]));
+    const sessionQuestions: QuizSessionQuestion[] = [];
+
+    for (const questionId of questionIds) {
+        const question = questionsById.get(questionId);
+
+        if (question) {
+            sessionQuestions.push({
+                ...question,
+                options: shuffleQuestionOptions(question.options),
+            });
+        }
+    }
+
+    return sessionQuestions;
 }
 
 function QuizUnavailable({ categoryTitle }: { categoryTitle: string }) {
@@ -70,9 +90,15 @@ function QuizSession({ category }: QuizRunnerProps) {
 
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {
+            const activeQuizSession = getOrCreateActiveQuizSession(
+                category.id,
+                category.questions.map((question) => question.id),
+                QUESTIONS_PER_QUIZ,
+            );
+
             answerLocked.current = false;
             hasSavedResult.current = false;
-            setSessionQuestions(createQuizSession(category));
+            setSessionQuestions(createQuizSession(category, activeQuizSession.questionIds));
             setCurrentQuestionIndex(0);
             setSelectedOptionId(null);
             setScore(0);
@@ -141,6 +167,7 @@ function QuizSession({ category }: QuizRunnerProps) {
                 });
 
                 setBestScore(getHighScore(category.id));
+                completeActiveQuizSession(category.id);
             }
 
             setIsFinished(true);
@@ -153,9 +180,15 @@ function QuizSession({ category }: QuizRunnerProps) {
     }
 
     function restartQuiz() {
+        const activeQuizSession = startNextQuizSession(
+            category.id,
+            category.questions.map((question) => question.id),
+            QUESTIONS_PER_QUIZ,
+        );
+
         answerLocked.current = false;
         hasSavedResult.current = false;
-        setSessionQuestions(createQuizSession(category));
+        setSessionQuestions(createQuizSession(category, activeQuizSession.questionIds));
         setCurrentQuestionIndex(0);
         setSelectedOptionId(null);
         setScore(0);
@@ -168,6 +201,7 @@ function QuizSession({ category }: QuizRunnerProps) {
             <QuizResult
                 category={category}
                 score={score}
+                total={total}
                 bestScore={bestScore}
                 onRestart={restartQuiz}
             />

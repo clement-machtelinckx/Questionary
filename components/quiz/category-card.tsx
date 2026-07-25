@@ -10,6 +10,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { QUESTIONS_PER_QUIZ } from "@/config/quiz";
 import type { QuestionCategory } from "@/config/questions";
 import type { HighScoreEntry } from "@/lib/high-score-storage";
 
@@ -19,7 +20,12 @@ type CategoryCardProps = {
 };
 
 export function CategoryCard({ category, highScore }: CategoryCardProps) {
-    const questionLabel = category.questions.length === 1 ? "question" : "questions";
+    const availableQuestionCount = category.questions.length;
+    const sessionQuestionCount = Math.min(QUESTIONS_PER_QUIZ, availableQuestionCount);
+    const availableQuestionLabel =
+        availableQuestionCount === 1 ? "question disponible" : "questions disponibles";
+    const sessionQuestionLabel =
+        sessionQuestionCount === 1 ? "question par partie" : "questions par partie";
 
     return (
         <Card className="h-full">
@@ -34,7 +40,10 @@ export function CategoryCard({ category, highScore }: CategoryCardProps) {
             </CardHeader>
             <CardContent className="mt-auto space-y-3 text-sm">
                 <p className="font-medium">
-                    {category.questions.length} {questionLabel}
+                    {availableQuestionCount} {availableQuestionLabel}
+                </p>
+                <p className="text-muted-foreground">
+                    {sessionQuestionCount} {sessionQuestionLabel}
                 </p>
                 <p className="text-muted-foreground flex items-center gap-2">
                     <Trophy aria-hidden="true" className="size-4" />
