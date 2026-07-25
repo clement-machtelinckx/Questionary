@@ -7,7 +7,10 @@ import { jeuxVideoCategory } from "./jeux-video";
 import { sciencesCategory } from "./sciences";
 import { sportCategory } from "./sport";
 import type { QuestionCategory } from "./types";
-import { validateQuestionCategories } from "./validate-questions";
+import {
+    validateNumberedQuestionCategories,
+    validateQuestionCategories,
+} from "./validate-questions";
 
 export const baseQuestionCategories: QuestionCategory[] = [
     cultureGeneraleCategory,
@@ -20,7 +23,16 @@ export const baseQuestionCategories: QuestionCategory[] = [
     sportCategory,
 ];
 
+const fiftyQuestionCategories: QuestionCategory[] = [
+    geographieCategory,
+    developpementWebCategory,
+    cinemaSeriesCategory,
+    jeuxVideoCategory,
+    sportCategory,
+];
+
 validateQuestionCategories(baseQuestionCategories);
+validateNumberedQuestionCategories(fiftyQuestionCategories, 50);
 
 export const allQuestionsCategory: QuestionCategory = {
     id: "category-all",

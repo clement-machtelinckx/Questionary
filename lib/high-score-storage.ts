@@ -10,6 +10,32 @@ export type HighScoreEntry = {
     achievedAt: string;
 };
 
+const LEGACY_CATEGORY_IDENTITIES: Record<
+    string,
+    Pick<HighScoreEntry, "categoryId" | "categorySlug" | "categoryTitle">
+> = {
+    "category-geography": {
+        categoryId: "category-geographie",
+        categorySlug: "geographie",
+        categoryTitle: "Géographie",
+    },
+    "category-web-development": {
+        categoryId: "category-developpement-web",
+        categorySlug: "developpement-web",
+        categoryTitle: "Développement web",
+    },
+    "category-movies-series": {
+        categoryId: "category-cinema-series",
+        categorySlug: "cinema-series",
+        categoryTitle: "Cinéma et séries",
+    },
+    "category-video-games": {
+        categoryId: "category-jeux-video",
+        categorySlug: "jeux-video",
+        categoryTitle: "Jeux vidéo",
+    },
+};
+
 function isHighScoreEntry(value: unknown): value is HighScoreEntry {
     if (!value || typeof value !== "object") {
         return false;
@@ -45,6 +71,34 @@ function canUseLocalStorage() {
     return typeof window !== "undefined";
 }
 
+function migrateLegacyCategory(entry: HighScoreEntry): HighScoreEntry {
+    const categoryIdentity = LEGACY_CATEGORY_IDENTITIES[entry.categoryId];
+
+    return categoryIdentity ? { ...entry, ...categoryIdentity } : entry;
+}
+
+function isBetterScore(candidate: HighScoreEntry, previous: HighScoreEntry): boolean {
+    return (
+        candidate.percentage > previous.percentage ||
+        (candidate.percentage === previous.percentage && candidate.score > previous.score)
+    );
+}
+
+function normalizeHighScores(entries: readonly HighScoreEntry[]): HighScoreEntry[] {
+    const scoresByCategory = new Map<string, HighScoreEntry>();
+
+    for (const storedEntry of entries) {
+        const entry = migrateLegacyCategory(storedEntry);
+        const previousScore = scoresByCategory.get(entry.categoryId);
+
+        if (!previousScore || isBetterScore(entry, previousScore)) {
+            scoresByCategory.set(entry.categoryId, entry);
+        }
+    }
+
+    return [...scoresByCategory.values()];
+}
+
 export function getHighScores(): HighScoreEntry[] {
     if (!canUseLocalStorage()) {
         return [];
@@ -63,13 +117,7 @@ export function getHighScores(): HighScoreEntry[] {
             return [];
         }
 
-        const categoryIds = new Set(parsed.map((entry) => entry.categoryId));
-
-        if (categoryIds.size !== parsed.length) {
-            return [];
-        }
-
-        return parsed;
+        return normalizeHighScores(parsed);
     } catch {
         return [];
     }
@@ -87,10 +135,7 @@ export function saveHighScore(entry: HighScoreEntry): boolean {
     try {
         const scores = getHighScores();
         const previousScore = scores.find((score) => score.categoryId === entry.categoryId);
-        const isBetter =
-            !previousScore ||
-            entry.percentage > previousScore.percentage ||
-            (entry.percentage === previousScore.percentage && entry.score > previousScore.score);
+        const isBetter = !previousScore || isBetterScore(entry, previousScore);
 
         if (!isBetter) {
             return false;
