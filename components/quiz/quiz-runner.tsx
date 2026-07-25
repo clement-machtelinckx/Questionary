@@ -7,6 +7,14 @@ import { CountryFlag } from "@/components/quiz/country-flag";
 import { QuizResult } from "@/components/quiz/quiz-result";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { QUESTIONS_PER_QUIZ } from "@/config/quiz";
 import type { Question, QuestionCategory, QuestionOptions } from "@/config/questions";
@@ -86,8 +94,13 @@ function QuizSession({ category }: QuizRunnerProps) {
     const [score, setScore] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
     const [bestScore, setBestScore] = useState<HighScoreEntry>();
+    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
     const answerLocked = useRef(false);
     const hasSavedResult = useRef(false);
+    const questionHeadingRef = useRef<HTMLHeadingElement>(null);
+    const reopenFeedbackButtonRef = useRef<HTMLButtonElement>(null);
+    const dialogCloseFocusTarget = useRef<"question" | "reopen" | null>(null);
+    const shouldFocusQuestion = useRef(false);
 
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {
@@ -105,10 +118,20 @@ function QuizSession({ category }: QuizRunnerProps) {
             setScore(0);
             setIsFinished(false);
             setBestScore(undefined);
+            setIsFeedbackOpen(false);
+            dialogCloseFocusTarget.current = null;
+            shouldFocusQuestion.current = false;
         }, 0);
 
         return () => window.clearTimeout(timeoutId);
     }, [category]);
+
+    useEffect(() => {
+        if (shouldFocusQuestion.current && !isFeedbackOpen && !isFinished) {
+            shouldFocusQuestion.current = false;
+            questionHeadingRef.current?.focus();
+        }
+    }, [currentQuestionIndex, isFeedbackOpen, isFinished]);
 
     if (sessionQuestions === null) {
         return (
@@ -142,10 +165,19 @@ function QuizSession({ category }: QuizRunnerProps) {
 
         answerLocked.current = true;
         setSelectedOptionId(optionId);
+        setIsFeedbackOpen(true);
 
         if (optionId === question.correctOptionId) {
             setScore((currentScore) => currentScore + 1);
         }
+    }
+
+    function handleFeedbackOpenChange(open: boolean) {
+        if (!open) {
+            dialogCloseFocusTarget.current = "reopen";
+        }
+
+        setIsFeedbackOpen(open);
     }
 
     function goToNextStep() {
@@ -153,7 +185,12 @@ function QuizSession({ category }: QuizRunnerProps) {
             return;
         }
 
+        setIsFeedbackOpen(false);
+
         if (isLastQuestion) {
+            dialogCloseFocusTarget.current = null;
+            shouldFocusQuestion.current = false;
+
             if (!hasSavedResult.current) {
                 hasSavedResult.current = true;
 
@@ -175,6 +212,8 @@ function QuizSession({ category }: QuizRunnerProps) {
             return;
         }
 
+        dialogCloseFocusTarget.current = "question";
+        shouldFocusQuestion.current = true;
         answerLocked.current = false;
         setCurrentQuestionIndex((index) => index + 1);
         setSelectedOptionId(null);
@@ -195,6 +234,9 @@ function QuizSession({ category }: QuizRunnerProps) {
         setScore(0);
         setIsFinished(false);
         setBestScore(undefined);
+        setIsFeedbackOpen(false);
+        dialogCloseFocusTarget.current = null;
+        shouldFocusQuestion.current = false;
     }
 
     if (isFinished) {
@@ -236,7 +278,11 @@ function QuizSession({ category }: QuizRunnerProps) {
                         aria-valuenow={currentQuestionIndex + 1}
                         aria-valuetext={`Question ${currentQuestionIndex + 1} sur ${total}`}
                     />
-                    <h2 className="text-xl leading-relaxed font-semibold md:text-2xl">
+                    <h2
+                        ref={questionHeadingRef}
+                        tabIndex={-1}
+                        className="text-xl leading-relaxed font-semibold outline-none md:text-2xl"
+                    >
                         {question.prompt}
                     </h2>
                 </CardHeader>
@@ -294,51 +340,91 @@ function QuizSession({ category }: QuizRunnerProps) {
                             </Button>
                         );
                     })}
-
-                    {hasAnswered ? (
-                        <div
-                            role="status"
-                            aria-live="polite"
-                            className={cn(
-                                "mt-6 rounded-lg border p-4",
-                                isCorrect
-                                    ? "border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/30"
-                                    : "border-red-600/40 bg-red-50 dark:bg-red-950/30",
-                            )}
-                        >
-                            <p className="flex items-center gap-2 font-semibold">
-                                {isCorrect ? (
-                                    <CheckCircle2
-                                        aria-hidden="true"
-                                        className="size-5 text-emerald-700 dark:text-emerald-400"
-                                    />
-                                ) : (
-                                    <XCircle
-                                        aria-hidden="true"
-                                        className="size-5 text-red-700 dark:text-red-400"
-                                    />
-                                )}
-                                {isCorrect ? "Bonne réponse !" : "Mauvaise réponse."}
-                            </p>
-                            {!isCorrect ? (
-                                <p className="mt-3">
-                                    La bonne réponse était : {correctOption?.label ?? "—"}.
-                                </p>
-                            ) : null}
-                            <p className="mt-2">{question.explanation}</p>
-                        </div>
-                    ) : null}
                 </CardContent>
 
-                {hasAnswered ? (
+                {hasAnswered && !isFeedbackOpen ? (
                     <CardFooter className="justify-end">
-                        <Button type="button" onClick={goToNextStep}>
-                            {isLastQuestion ? "Voir mon résultat" : "Question suivante"}
-                            <ArrowRight aria-hidden="true" />
+                        <Button
+                            ref={reopenFeedbackButtonRef}
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsFeedbackOpen(true)}
+                        >
+                            Voir la correction
                         </Button>
                     </CardFooter>
                 ) : null}
             </Card>
+
+            <Dialog open={isFeedbackOpen} onOpenChange={handleFeedbackOpenChange}>
+                <DialogContent
+                    className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-y-auto"
+                    onPointerDownOutside={(event) => event.preventDefault()}
+                    onCloseAutoFocus={(event) => {
+                        event.preventDefault();
+
+                        if (dialogCloseFocusTarget.current === "reopen") {
+                            reopenFeedbackButtonRef.current?.focus();
+                        }
+
+                        if (dialogCloseFocusTarget.current === "question") {
+                            questionHeadingRef.current?.focus();
+                        }
+
+                        dialogCloseFocusTarget.current = null;
+                    }}
+                >
+                    <DialogHeader>
+                        <DialogTitle
+                            aria-live="polite"
+                            className={cn(
+                                "flex items-center gap-2 text-xl",
+                                isCorrect
+                                    ? "text-emerald-800 dark:text-emerald-300"
+                                    : "text-red-800 dark:text-red-300",
+                            )}
+                        >
+                            {isCorrect ? (
+                                <CheckCircle2 aria-hidden="true" className="size-5" />
+                            ) : (
+                                <XCircle aria-hidden="true" className="size-5" />
+                            )}
+                            {isCorrect ? "Bonne réponse !" : "Mauvaise réponse."}
+                        </DialogTitle>
+                        <DialogDescription className="sr-only">
+                            Correction de la question actuelle
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div
+                        className={cn(
+                            "rounded-lg border p-4",
+                            isCorrect
+                                ? "border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/30"
+                                : "border-red-600/40 bg-red-50 dark:bg-red-950/30",
+                        )}
+                    >
+                        {!isCorrect ? (
+                            <p className="font-medium">
+                                La bonne réponse était : {correctOption?.label ?? "—"}.
+                            </p>
+                        ) : null}
+                        <p className={cn(!isCorrect && "mt-3")}>{question.explanation}</p>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            size="lg"
+                            className="min-h-11 w-full sm:w-auto"
+                            onClick={goToNextStep}
+                        >
+                            {isLastQuestion ? "Voir mon résultat" : "Question suivante"}
+                            <ArrowRight aria-hidden="true" />
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

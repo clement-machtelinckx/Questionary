@@ -15,6 +15,10 @@ export function getAnswerButtons(page: Page) {
     return page.locator('button[aria-pressed="false"]');
 }
 
+export function getFeedbackDialog(page: Page) {
+    return page.getByRole("dialog");
+}
+
 export async function getQuizTotal(page: Page): Promise<number> {
     const counter = await page.getByText(/Question 1 sur \d+/).textContent();
     const match = counter?.match(/Question 1 sur (\d+)/);
@@ -34,11 +38,15 @@ export async function completeCurrentQuiz(page: Page): Promise<number> {
 
         await expect(answers).toHaveCount(4);
         await answers.first().click();
-        await expect(page.getByRole("status")).toContainText(/Bonne réponse|Mauvaise réponse/);
+
+        const dialog = getFeedbackDialog(page);
+
+        await expect(dialog).toBeVisible();
+        await expect(dialog).toContainText(/Bonne réponse|Mauvaise réponse/);
 
         const nextButtonName = questionIndex === total ? "Voir mon résultat" : "Question suivante";
 
-        await page.getByRole("button", { name: nextButtonName }).click();
+        await dialog.getByRole("button", { name: nextButtonName }).click();
     }
 
     await expect(page.getByText("Quiz terminé")).toBeVisible();

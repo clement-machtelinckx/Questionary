@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { allQuestionsCategory } from "../../config/questions";
 import { drapeauxCategory } from "../../config/questions/drapeaux";
-import { clearBrowserStorage, getAnswerButtons } from "./helpers";
+import { clearBrowserStorage, getAnswerButtons, getFeedbackDialog } from "./helpers";
 
 const ACTIVE_SESSION_STORAGE_KEY = "questionary:active-quiz-sessions:v1";
 const firstFlagQuestion = drapeauxCategory.questions[0];
@@ -16,15 +16,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("ouvre Drapeaux, répond et affiche le drapeau suivant", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("link", { name: "Choisir une catégorie" }).click();
+    await page.goto("/quiz/drapeaux");
 
-    const categoryTitle = page.getByText("Drapeaux", { exact: true });
-    const categoryCard = categoryTitle.locator("..").locator("..");
-
-    await expect(categoryTitle).toBeVisible();
-    await categoryCard.getByRole("link", { name: "Commencer" }).click();
     await expect(page).toHaveURL(/\/quiz\/drapeaux$/);
+    await expect(page.getByText("Question 1 sur 20")).toBeVisible();
 
     const firstFlag = page.getByRole("img").first();
 
@@ -60,10 +55,14 @@ test("ouvre Drapeaux, répond et affiche le drapeau suivant", async ({ page }) =
     }
 
     await getAnswerButtons(page).first().click();
-    await expect(page.getByRole("status")).toContainText(/Bonne réponse|Mauvaise réponse/);
+
+    const dialog = getFeedbackDialog(page);
+
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText(/Bonne réponse|Mauvaise réponse/);
     await expect(firstFlag).toBeVisible();
 
-    await page.getByRole("button", { name: "Question suivante" }).click();
+    await dialog.getByRole("button", { name: "Question suivante" }).click();
 
     const nextFlag = page.getByRole("img").first();
 

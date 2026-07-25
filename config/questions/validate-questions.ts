@@ -229,6 +229,8 @@ export function validateQuestionCategories(categories: readonly QuestionCategory
 }
 
 export function validateFlagQuestionCategory(category: QuestionCategory): void {
+    validateQuestionCategories([category]);
+
     const countryCodes = new Set<string>();
 
     for (const question of category.questions) {
@@ -245,6 +247,19 @@ export function validateFlagQuestionCategory(category: QuestionCategory): void {
         }
 
         countryCodes.add(question.media.countryCode);
+    }
+}
+
+export function validateExpectedQuestionCount(
+    categories: readonly QuestionCategory[],
+    expectedQuestionCount: number,
+): void {
+    for (const category of categories) {
+        if (category.questions.length !== expectedQuestionCount) {
+            throw new Error(
+                `Configuration invalide : la catégorie "${category.title}" doit contenir exactement ${expectedQuestionCount} questions.`,
+            );
+        }
     }
 }
 

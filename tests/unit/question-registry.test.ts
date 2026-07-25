@@ -26,6 +26,7 @@ describe("registre des catégories", () => {
 
     it("enregistre Drapeaux et ajoute ses questions une seule fois à all", () => {
         expect(getCategoryBySlug("drapeaux")).toBe(drapeauxCategory);
+        expect(baseQuestionCategories).toHaveLength(11);
         expect(baseQuestionCategories).toContain(drapeauxCategory);
 
         const allQuestionIds = allQuestionsCategory.questions.map((question) => question.id);

@@ -11,6 +11,7 @@ import { sciencesCategory } from "./sciences";
 import { sportCategory } from "./sport";
 import type { QuestionCategory } from "./types";
 import {
+    validateExpectedQuestionCount,
     validateFlagQuestionCategory,
     validateNumberedQuestionCategories,
     validateQuestionCategories,
@@ -30,19 +31,23 @@ export const baseQuestionCategories: QuestionCategory[] = [
     sportCategory,
 ];
 
-const fiftyQuestionCategories: QuestionCategory[] = [
+const numberedFiftyQuestionCategories: QuestionCategory[] = [
+    sciencesCategory,
+    histoireCategory,
     geographieCategory,
-    drapeauxCategory,
     natureCategory,
     developpementWebCategory,
     cinemaSeriesCategory,
     herculePoirotCategory,
     jeuxVideoCategory,
     sportCategory,
+    drapeauxCategory,
 ];
 
 validateQuestionCategories(baseQuestionCategories);
-validateNumberedQuestionCategories(fiftyQuestionCategories, 50);
+validateExpectedQuestionCount([cultureGeneraleCategory], 60);
+validateExpectedQuestionCount(numberedFiftyQuestionCategories, 50);
+validateNumberedQuestionCategories(numberedFiftyQuestionCategories, 50);
 validateFlagQuestionCategory(drapeauxCategory);
 
 export const allQuestionsCategory: QuestionCategory = {

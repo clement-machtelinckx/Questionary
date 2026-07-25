@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+
 import flagCountries from "flag-icons/country.json";
 import { describe, expect, it } from "vitest";
 
@@ -46,11 +49,37 @@ describe("drapeauxCategory", () => {
 
             expect(question.media.countryCode).toMatch(/^[a-z]{2}$/);
             expect(supportedCodes.has(question.media.countryCode)).toBe(true);
+            expect(
+                existsSync(
+                    resolve(
+                        process.cwd(),
+                        "node_modules",
+                        "flag-icons",
+                        "flags",
+                        "4x3",
+                        `${question.media.countryCode}.svg`,
+                    ),
+                ),
+            ).toBe(true);
 
             return question.media.countryCode;
         });
 
         expect(new Set(countryCodes)).toHaveLength(50);
+    });
+
+    it("associe les 50 drapeaux à 50 pays distincts", () => {
+        const correctCountryNames = drapeauxCategory.questions.map((question) => {
+            const correctOption = question.options.find(
+                (option) => option.id === question.correctOptionId,
+            );
+
+            expect(correctOption).toBeDefined();
+
+            return correctOption?.label;
+        });
+
+        expect(new Set(correctCountryNames)).toHaveLength(50);
     });
 
     it("ne révèle aucune réponse ni code pays dans les descriptions accessibles", () => {

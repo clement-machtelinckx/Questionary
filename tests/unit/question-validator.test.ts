@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { QuestionMedia, QuestionOptions } from "@/config/questions/types";
 import {
+    validateExpectedQuestionCount,
     validateFlagQuestionCategory,
     validateNumberedQuestionCategories,
     validateQuestionCategories,
@@ -276,6 +277,47 @@ describe("validateFlagQuestionCategory", () => {
         }
 
         expect(() => validateFlagQuestionCategory(category)).toThrow(/est utilisé plusieurs fois/);
+    });
+
+    it("applique aussi les règles générales aux questions Drapeaux", () => {
+        const category = createTestCategory(1);
+        category.questions[0].media = {
+            type: "flag",
+            countryCode: "FR",
+            description: "Trois bandes verticales bleue, blanche et rouge",
+        };
+
+        expect(() => validateFlagQuestionCategory(category)).toThrow(
+            /code pays ISO à deux lettres minuscules/,
+        );
+    });
+});
+
+describe("validateExpectedQuestionCount", () => {
+    it("accepte les catégories qui possèdent le nombre attendu de questions", () => {
+        expect(() =>
+            validateExpectedQuestionCount(
+                [
+                    createTestCategory(2, {
+                        id: "category-one",
+                        slug: "one",
+                        questionPrefix: "one-question",
+                    }),
+                    createTestCategory(2, {
+                        id: "category-two",
+                        slug: "two",
+                        questionPrefix: "two-question",
+                    }),
+                ],
+                2,
+            ),
+        ).not.toThrow();
+    });
+
+    it("rejette individuellement une catégorie dont le nombre est incorrect", () => {
+        expect(() => validateExpectedQuestionCount([createTestCategory(1)], 2)).toThrow(
+            /doit contenir exactement 2 questions/,
+        );
     });
 });
 

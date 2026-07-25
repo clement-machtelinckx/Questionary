@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -57,46 +57,49 @@ describe("QuizRunner", () => {
         expect(screen.getByText("Score : 0 points")).toBeInTheDocument();
         expect(screen.getAllByRole("button", { pressed: false })).toHaveLength(4);
         expect(screen.queryByText(category.questions[0].explanation)).not.toBeInTheDocument();
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
 
     it("augmente le score, verrouille les réponses et affiche la correction après une bonne réponse", async () => {
         const { category, user } = await renderQuiz();
+        const answers = screen.getAllByRole("button", { pressed: false });
+        const correctAnswer = screen.getByRole("button", { name: "Réponse B" });
 
-        await user.click(screen.getByRole("button", { name: "Réponse B" }));
+        await user.click(correctAnswer);
+
+        const dialog = screen.getByRole("dialog");
 
         expect(screen.getByText("Score : 1 point")).toBeInTheDocument();
-        expect(screen.getByRole("status")).toHaveTextContent("Bonne réponse !");
-        expect(screen.getByRole("status")).toHaveTextContent(category.questions[0].explanation);
         expect(
-            screen.getByRole("button", {
-                name: /Réponse B.*Bonne réponse/,
-            }),
-        ).toBeDisabled();
-        expect(screen.getAllByRole("button", { pressed: false })[0]).toBeDisabled();
-        expect(screen.getByRole("button", { name: "Question suivante" })).toBeInTheDocument();
+            within(dialog).getByRole("heading", { name: "Bonne réponse !" }),
+        ).toBeInTheDocument();
+        expect(within(dialog).getByText(category.questions[0].explanation)).toBeInTheDocument();
+        expect(dialog.contains(document.activeElement)).toBe(true);
+        expect(correctAnswer).toBeDisabled();
+        expect(answers.every((answer) => answer.hasAttribute("disabled"))).toBe(true);
+        expect(
+            within(dialog).getByRole("button", { name: "Question suivante" }),
+        ).toBeInTheDocument();
+        expect(screen.getAllByText(category.questions[0].explanation)).toHaveLength(1);
     });
 
     it("identifie la mauvaise réponse choisie et la bonne réponse sans augmenter le score", async () => {
         const { category, user } = await renderQuiz();
+        const wrongAnswer = screen.getByRole("button", { name: "Réponse A" });
+        const correctAnswer = screen.getByRole("button", { name: "Réponse B" });
 
-        await user.click(screen.getByRole("button", { name: "Réponse A" }));
+        await user.click(wrongAnswer);
 
-        const feedback = screen.getByRole("status");
+        const dialog = screen.getByRole("dialog");
 
         expect(screen.getByText("Score : 0 points")).toBeInTheDocument();
-        expect(feedback).toHaveTextContent("Mauvaise réponse.");
-        expect(feedback).toHaveTextContent("La bonne réponse était : Réponse B.");
-        expect(feedback).toHaveTextContent(category.questions[0].explanation);
         expect(
-            screen.getByRole("button", {
-                name: /Réponse A.*Votre réponse/,
-            }),
-        ).toBeDisabled();
-        expect(
-            screen.getByRole("button", {
-                name: /Réponse B.*Bonne réponse/,
-            }),
-        ).toBeDisabled();
+            within(dialog).getByRole("heading", { name: "Mauvaise réponse." }),
+        ).toBeInTheDocument();
+        expect(dialog).toHaveTextContent("La bonne réponse était : Réponse B.");
+        expect(dialog).toHaveTextContent(category.questions[0].explanation);
+        expect(wrongAnswer).toBeDisabled();
+        expect(correctAnswer).toBeDisabled();
     });
 
     it("n’incrémente le score qu’une seule fois lors d’un double clic", async () => {
@@ -108,22 +111,61 @@ describe("QuizRunner", () => {
         await user.dblClick(correctAnswer);
 
         expect(screen.getByText("Score : 1 point")).toBeInTheDocument();
+        expect(screen.getAllByRole("dialog")).toHaveLength(1);
+        expect(
+            within(screen.getByRole("dialog")).getByRole("heading", {
+                name: "Bonne réponse !",
+            }),
+        ).toBeInTheDocument();
+    });
+
+    it("ferme puis rouvre la même correction sans modifier le score", async () => {
+        const { category, user } = await renderQuiz();
+
+        await user.click(screen.getByRole("button", { name: "Réponse B" }));
+        await user.keyboard("{Escape}");
+
+        await waitFor(() => {
+            expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        });
+
+        expect(screen.getByText("Score : 1 point")).toBeInTheDocument();
+
+        const reopenButton = screen.getByRole("button", { name: "Voir la correction" });
+
+        expect(reopenButton).toHaveFocus();
+
+        await user.click(reopenButton);
+
+        const dialog = screen.getByRole("dialog");
+
+        expect(
+            within(dialog).getByRole("heading", { name: "Bonne réponse !" }),
+        ).toBeInTheDocument();
+        expect(within(dialog).getByText(category.questions[0].explanation)).toBeInTheDocument();
+        expect(screen.getByText("Score : 1 point")).toBeInTheDocument();
     });
 
     it("passe manuellement à la question suivante en conservant le score", async () => {
         const { category, user } = await renderQuiz();
 
         await user.click(screen.getByRole("button", { name: "Réponse B" }));
-        await user.click(screen.getByRole("button", { name: "Question suivante" }));
+        await user.click(
+            within(screen.getByRole("dialog")).getByRole("button", {
+                name: "Question suivante",
+            }),
+        );
 
         expect(screen.getByText("Question 2 sur 2")).toBeInTheDocument();
         expect(screen.getByText("Score : 1 point")).toBeInTheDocument();
-        expect(
-            screen.getByRole("heading", {
-                name: category.questions[1].prompt,
-            }),
-        ).toBeInTheDocument();
-        expect(screen.queryByRole("status")).not.toBeInTheDocument();
+        const nextQuestionHeading = screen.getByRole("heading", {
+            name: category.questions[1].prompt,
+        });
+
+        expect(nextQuestionHeading).toBeInTheDocument();
+        expect(nextQuestionHeading).toHaveFocus();
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        expect(screen.queryByText(category.questions[0].explanation)).not.toBeInTheDocument();
         expect(screen.getAllByRole("button", { pressed: false })).toHaveLength(4);
     });
 
@@ -150,10 +192,14 @@ describe("QuizRunner", () => {
 
         await user.click(screen.getByRole("button", { name: "Réponse B" }));
 
-        expect(screen.getByRole("status")).toBeInTheDocument();
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
         expect(firstFlag).toBeInTheDocument();
 
-        await user.click(screen.getByRole("button", { name: "Question suivante" }));
+        await user.click(
+            within(screen.getByRole("dialog")).getByRole("button", {
+                name: "Question suivante",
+            }),
+        );
 
         expect(
             screen.getByRole("img", {
@@ -167,7 +213,14 @@ describe("QuizRunner", () => {
         const { user } = await renderQuiz(category);
 
         await user.click(screen.getByRole("button", { name: "Réponse B" }));
-        await user.click(screen.getByRole("button", { name: "Voir mon résultat" }));
+
+        const dialog = screen.getByRole("dialog");
+
+        expect(
+            within(dialog).getByRole("button", { name: "Voir mon résultat" }),
+        ).toBeInTheDocument();
+
+        await user.click(within(dialog).getByRole("button", { name: "Voir mon résultat" }));
 
         expect(
             screen.getByRole("heading", {
@@ -192,13 +245,18 @@ describe("QuizRunner", () => {
         const { user } = await renderQuiz(category);
 
         await user.click(screen.getByRole("button", { name: "Réponse B" }));
-        await user.click(screen.getByRole("button", { name: "Voir mon résultat" }));
+        await user.click(
+            within(screen.getByRole("dialog")).getByRole("button", {
+                name: "Voir mon résultat",
+            }),
+        );
         await user.click(screen.getByRole("button", { name: "Recommencer" }));
 
         expect(poolMocks.startNextQuizSession).toHaveBeenCalledTimes(1);
         expect(screen.getByText("Question 1 sur 1")).toBeInTheDocument();
         expect(screen.getByText("Score : 0 points")).toBeInTheDocument();
         expect(screen.getAllByRole("button", { pressed: false })).toHaveLength(4);
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
 
     it("affiche un état indisponible pour une catégorie vide", () => {
