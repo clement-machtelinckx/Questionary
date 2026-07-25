@@ -5,6 +5,7 @@ import { geographieCategory } from "./geographie";
 import { herculePoirotCategory } from "./hercule-poirot";
 import { histoireCategory } from "./histoire";
 import { jeuxVideoCategory } from "./jeux-video";
+import { natureCategory } from "./nature";
 import { sciencesCategory } from "./sciences";
 import { sportCategory } from "./sport";
 import type { QuestionCategory } from "./types";
@@ -18,6 +19,7 @@ export const baseQuestionCategories: QuestionCategory[] = [
     sciencesCategory,
     histoireCategory,
     geographieCategory,
+    natureCategory,
     developpementWebCategory,
     cinemaSeriesCategory,
     herculePoirotCategory,
@@ -27,6 +29,7 @@ export const baseQuestionCategories: QuestionCategory[] = [
 
 const fiftyQuestionCategories: QuestionCategory[] = [
     geographieCategory,
+    natureCategory,
     developpementWebCategory,
     cinemaSeriesCategory,
     herculePoirotCategory,
