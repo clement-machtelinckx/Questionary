@@ -1,6 +1,6 @@
-import { natureAdaptationsConservationQuestions } from "./nature-adaptations-conservation";
-import { natureAnimauxPlantesQuestions } from "./nature-animaux-plantes";
-import { natureEcosystemesQuestions } from "./nature-ecosystemes";
+import natureQuestionsPart1 from "./nature-part-1.json";
+import natureQuestionsPart2 from "./nature-part-2.json";
+import natureQuestionsPart3 from "./nature-part-3.json";
 import type { QuestionCategory } from "./types";
 
 export const natureCategory: QuestionCategory = {
@@ -10,8 +10,8 @@ export const natureCategory: QuestionCategory = {
     description:
         "Explorez les animaux, les plantes, les champignons, les écosystèmes et les grands équilibres naturels.",
     questions: [
-        ...natureAnimauxPlantesQuestions,
-        ...natureEcosystemesQuestions,
-        ...natureAdaptationsConservationQuestions,
-    ],
+        ...natureQuestionsPart1,
+        ...natureQuestionsPart2,
+        ...natureQuestionsPart3,
+    ] as QuestionCategory["questions"],
 };
