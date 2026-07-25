@@ -1,13 +1,9 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Container } from "./container";
-import { MenuBurger } from "./menuBurger";
-import { NavLink } from "./navLink";
-import Image from "next/image";
 
 export function Header() {
     return (
-        <header className="bg-background/80 sticky top-0 z-50 border-b backdrop-blur">
+        <header className="border-b">
             <a
                 href="#main"
                 className="focus:bg-primary focus:text-primary-foreground sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:rounded focus:px-4 focus:py-2"
@@ -17,57 +13,17 @@ export function Header() {
             <Container>
                 <div className="flex h-16 items-center justify-between">
                     <Link href="/" className="font-semibold tracking-tight">
-                        {/* <Image
-                            src="/logo-transparent.png"
-                            alt="Protec'audio Logo"
-                            width={120}
-                            height={20}
-                            className="h-auto w-auto max-w-[220px]"
-                            priority={false}
-                        /> */}
+                        Questionary
                     </Link>
 
-                    <nav
-                        aria-label="Navigation principale"
-                        className="hidden items-center gap-6 md:flex"
-                    >
+                    <nav aria-label="Navigation principale">
                         <Link
                             href="/"
-                            className="text-muted-foreground hover:text-foreground text-base transition-colors"
+                            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                         >
                             Accueil
                         </Link>
-
-                        <Link
-                            href="/test"
-                            className="text-muted-foreground hover:text-foreground text-base transition-colors"
-                        >
-                            Test
-                        </Link>
-
-                        <Link
-                            href="/contact"
-                            className="text-muted-foreground hover:text-foreground text-base transition-colors"
-                        >
-                            Contact
-                        </Link>
-                        <Link
-                            href="/example"
-                            className="text-muted-foreground hover:text-foreground text-base transition-colors"
-                        >
-                            Example
-                        </Link>
                     </nav>
-
-                    <div className="flex items-center gap-2">
-                        {/* Desktop CTA */}
-                        <Button asChild className="hidden rounded-full rounded-tr-md font-light uppercase tracking-wider md:inline-flex">
-                            <Link href="/contact">Contact&nbsp;&nbsp;→</Link>
-                        </Button>
-
-                        {/* Mobile burger */}
-                        <MenuBurger />
-                    </div>
                 </div>
             </Container>
         </header>
