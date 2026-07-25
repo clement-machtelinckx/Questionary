@@ -4,7 +4,8 @@ Application de quiz fonctionnant entièrement dans le navigateur.
 
 ## Fonctionnalités
 
-- deux catégories de démonstration ;
+- huit catégories thématiques et un quiz réunissant les 68 questions ;
+- ordre aléatoire des questions et des réponses à chaque partie ;
 - correction immédiate après chaque réponse ;
 - résultat final et pourcentage ;
 - meilleur score conservé localement par catégorie ;

@@ -1,30 +1,107 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, XCircle } from "lucide-react";
 
 import { QuizResult } from "@/components/quiz/quiz-result";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import type { QuestionCategory } from "@/config/questions";
+import type { Question, QuestionCategory, QuestionOptions } from "@/config/questions";
 import { getHighScore, saveHighScore, type HighScoreEntry } from "@/lib/high-score-storage";
+import { shuffleArray } from "@/lib/shuffle-array";
 import { cn } from "@/lib/utils";
 
 type QuizRunnerProps = {
     category: QuestionCategory;
 };
 
+type QuizSessionQuestion = Omit<Question, "options"> & {
+    options: QuestionOptions;
+};
+
+function shuffleQuestionOptions(options: QuestionOptions): QuestionOptions {
+    const shuffledOptions = shuffleArray(options);
+
+    if (shuffledOptions.length !== 4) {
+        throw new Error("Une question de quiz doit contenir exactement quatre réponses.");
+    }
+
+    return [shuffledOptions[0], shuffledOptions[1], shuffledOptions[2], shuffledOptions[3]];
+}
+
+function createQuizSession(category: QuestionCategory): QuizSessionQuestion[] {
+    return shuffleArray(category.questions).map((question) => ({
+        ...question,
+        options: shuffleQuestionOptions(question.options),
+    }));
+}
+
+function QuizUnavailable({ categoryTitle }: { categoryTitle: string }) {
+    return (
+        <Card className="mx-auto max-w-2xl">
+            <CardHeader className="text-center">
+                <h1 className="text-3xl font-semibold tracking-tight">Quiz indisponible</h1>
+                <p className="text-muted-foreground">
+                    La catégorie « {categoryTitle} » ne contient aucune question utilisable.
+                </p>
+            </CardHeader>
+        </Card>
+    );
+}
+
 export function QuizRunner({ category }: QuizRunnerProps) {
+    if (category.questions.length === 0) {
+        return <QuizUnavailable categoryTitle={category.title} />;
+    }
+
+    return <QuizSession key={category.id} category={category} />;
+}
+
+function QuizSession({ category }: QuizRunnerProps) {
+    const [sessionQuestions, setSessionQuestions] = useState<QuizSessionQuestion[] | null>(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
     const [score, setScore] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
     const [bestScore, setBestScore] = useState<HighScoreEntry>();
+    const answerLocked = useRef(false);
     const hasSavedResult = useRef(false);
 
-    const question = category.questions[currentQuestionIndex];
-    const total = category.questions.length;
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            answerLocked.current = false;
+            hasSavedResult.current = false;
+            setSessionQuestions(createQuizSession(category));
+            setCurrentQuestionIndex(0);
+            setSelectedOptionId(null);
+            setScore(0);
+            setIsFinished(false);
+            setBestScore(undefined);
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [category]);
+
+    if (sessionQuestions === null) {
+        return (
+            <Card className="mx-auto max-w-2xl">
+                <CardContent className="py-10 text-center">
+                    <p className="text-muted-foreground" aria-live="polite">
+                        Préparation du quiz…
+                    </p>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    const question = sessionQuestions[currentQuestionIndex];
+    const total = sessionQuestions.length;
+
+    if (!question || total === 0) {
+        return <QuizUnavailable categoryTitle={category.title} />;
+    }
+
     const hasAnswered = selectedOptionId !== null;
     const isCorrect = selectedOptionId === question.correctOptionId;
     const correctOption = question.options.find((option) => option.id === question.correctOptionId);
@@ -32,10 +109,11 @@ export function QuizRunner({ category }: QuizRunnerProps) {
     const isLastQuestion = currentQuestionIndex === total - 1;
 
     function selectOption(optionId: string) {
-        if (hasAnswered) {
+        if (answerLocked.current || hasAnswered) {
             return;
         }
 
+        answerLocked.current = true;
         setSelectedOptionId(optionId);
 
         if (optionId === question.correctOptionId) {
@@ -69,16 +147,20 @@ export function QuizRunner({ category }: QuizRunnerProps) {
             return;
         }
 
+        answerLocked.current = false;
         setCurrentQuestionIndex((index) => index + 1);
         setSelectedOptionId(null);
     }
 
     function restartQuiz() {
+        answerLocked.current = false;
         hasSavedResult.current = false;
+        setSessionQuestions(createQuizSession(category));
         setCurrentQuestionIndex(0);
         setSelectedOptionId(null);
         setScore(0);
         setIsFinished(false);
+        setBestScore(undefined);
     }
 
     if (isFinished) {
